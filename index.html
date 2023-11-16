@@ -69,6 +69,7 @@
             piece = new rocket(30, 30, "red", window.screen.width/2, window.screen.height/2);
             //početno vrijeme
             time = Date.now();
+            //posatvljanje najboljeg i trenutnog vremena u prozoru
             if (localStorage.maxTime) {
                 document.getElementById("bt").textContent = timeToString(parseInt(localStorage.maxTime));
             } else {
@@ -250,6 +251,7 @@
             }
             //ažuriranje igrača
             piece.update();
+            //promjena proteklog vremena igre
             document.getElementById("ct").textContent = timeToString(Date.now()-time);
             checkCollision();     
         }  
