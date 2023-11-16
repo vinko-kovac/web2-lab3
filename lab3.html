@@ -69,6 +69,12 @@
             piece = new rocket(30, 30, "red", window.screen.width/2, window.screen.height/2);
             //početno vrijeme
             time = Date.now();
+            if (localStorage.maxTime) {
+                document.getElementById("bt").textContent = timeToString(parseInt(localStorage.maxTime));
+            } else {
+                document.getElementById("bt").textContent = timeToString(0);
+            }
+            document.getElementById("ct").textContent = timeToString(Date.now()-time);
             //početak igre
             myGameArea.start();
             stop = false;  
@@ -244,12 +250,17 @@
             }
             //ažuriranje igrača
             piece.update();
+            document.getElementById("ct").textContent = timeToString(Date.now()-time);
             checkCollision();     
         }  
         </script>    
     </head>   
     <body onload="startGame()">  
         <h1>Asteroids game</h1>
+        <div style="position: fixed; top: 0; right: 20px;">
+            <h2>Current time: <span id="ct"></span></h2>
+            <h2>Best time: <span id="bt"></span></h2>
+        </div>
         <div>    
             <dialog id="Dialogbox" style="width:20%; background-color: #CCC; border:1px solid black;">    
                 <p id="endText" style="text-align: center;"></p>  
