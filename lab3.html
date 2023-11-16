@@ -1,0 +1,264 @@
+<!DOCTYPE html> 
+<html> 
+    <head>   
+        <title>Vrlo jednostavna HTML5 igra</title>   
+        <style>   
+        canvas {   
+            border:1px solid #000000;
+            position:fixed;
+            left:0;
+            top:0;
+            width:99%;
+            height:99%;   
+        }   
+        </style>    
+        <script>
+        //lista asteroida  
+        var asteroids;
+        //objekt igrač
+        var piece;
+        //početno vrijeme
+        var time;
+        //zastavica za zaustavljanje
+        var stop = true;
+        //broj asteroida
+        var num = 15;
+        
+        //funkcija za početak igre
+        function startGame() {  
+            asteroids = new Array();
+            for (let i = 0; i<num; i++) {
+                //ovdje se generiraju parametri za svaki asteroid
+                //širina
+                var w = Math.floor(Math.random()*15) + 15;
+                //visina
+                var h = Math.floor(Math.random()*15) + 15;
+                //brzina po x
+                var sx = Math.floor(Math.random()*4) + 1;
+                //brzina po y
+                var sy = Math.floor(Math.random()*4) + 1;
+                //asteroidi su jednakomjerno raspoređeni sa svih strana canvasa
+                //iznad
+                if (i % 4 == 0) {
+                    var x = Math.floor(Math.random()*window.screen.width);
+                    var y = -h;
+                    asteroids.push(new asteroid(w, h, x, y, sx, sy));
+                } 
+                //lijevo
+                else if (i % 4 == 1) {
+                    var x = -w;
+                    var y = Math.floor(Math.random()*window.screen.height);
+                    asteroids.push(new asteroid(w, h, x, y, sx, sy));
+                }
+                //ispod
+                else if (i % 4 == 2) {
+                    var x = Math.floor(Math.random()*window.screen.width);
+                    var y = window.screen.height + h;
+                    asteroids.push(new asteroid(w, h, x, y, sx, sy));
+                } 
+                //desno
+                else {
+                    var x = window.screen.width + w;
+                    var y = Math.floor(Math.random()*window.screen.height);
+                    asteroids.push(new asteroid(w, h, x, y, sx, sy));
+                }
+            }
+            //kreiranje ostalih objekata
+            var canvas = document.getElementsByTagName("canvas");
+            //igrač
+            piece = new rocket(30, 30, "red", window.screen.width/2, window.screen.height/2);
+            //početno vrijeme
+            time = Date.now();
+            //početak igre
+            myGameArea.start();
+            stop = false;  
+        }
+        //opis i kreiranje canvasa
+        var myGameArea = {    
+            canvas : document.createElement("canvas"),    
+            start : function() {      
+                this.canvas.id = "myGameCanvas";      
+                this.canvas.width = window.screen.width;      
+                this.canvas.height = window.screen.height;     
+                this.context = this.canvas.getContext("2d");
+                //dodavanje 3d sjene oko objekata
+                this.context.shadowBlur = 10;
+                this.context.shadowColor = "black";      
+                document.body.insertBefore(this.canvas, document.body.childNodes[0]);      
+                this.frameNo = 0;      
+                this.interval = setInterval(updateGameArea, 20);    
+            },    
+            stop : function() {     
+                clearInterval(this.interval);   
+            },      
+            clear : function() {      
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);    
+            }   
+        }
+        //bilježenje stiskanja tipki na tipkovnici za kretanje igrača i pomicanje ako su stisnute strelice
+        document.onkeydown = function(event) {
+            if (event.keyCode >= 37 && event.keyCode <= 40 && stop == false) {
+                checkCollision();
+                piece.newPos(event.keyCode);
+                piece.update();
+            }
+        }
+
+        //glavna funkcija za opis asteroida
+        function asteroid(width, height, x, y, speed_x, speed_y) {        
+            this.width = width;    
+            this.height = height;    
+            this.speed_x = speed_x;    
+            this.speed_y = speed_y;        
+            this.x = x;    
+            this.y = y;
+            //osvježavanje pozicije jednog asteroida     
+            this.update = function() {      
+                ctx = myGameArea.context;      
+                ctx.save();      
+                ctx.translate(this.x, this.y);            
+                ctx.fillStyle = "grey";      
+                ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);      
+                ctx.restore();      
+            }
+            //promjena pozicije jednog asteroida, ako dođe do ruba se odbija    
+            this.newPos = function() {                
+                if (this.x - this.width / 2 < 0) {
+                    this.speed_x = Math.abs(this.speed_x);
+                }                               
+                else if ((this.x + this.width / 2) >= myGameArea.context.canvas.width) {
+                    this.speed_x = -Math.abs(this.speed_x);
+                }                  
+                if (this.y - this.height / 2 < 0) {
+                    this.speed_y = Math.abs(this.speed_y);
+                }            
+                else if ((this.y + this.height / 2) >= myGameArea.context.canvas.height) {        
+                    this.speed_y = -Math.abs(this.speed_y);                
+                }
+                this.x += this.speed_x;
+                this.y += this.speed_y; 
+            }
+        }
+
+        //glavna funkcija za opis igrača
+        function rocket(width, height, color, x, y) {        
+            this.width = width;    
+            this.height = height;            
+            this.x = x;    
+            this.y = y;
+            //osvježavanje pozicije igrača     
+            this.update = function() {      
+                ctx = myGameArea.context;      
+                ctx.save();      
+                ctx.translate(this.x, this.y);            
+                ctx.fillStyle = color;      
+                ctx.fillRect(this.width / -2, this.height / -2, this.width, this.height);      
+                ctx.restore();      
+            }
+            //promjena pozicije igrača, ako dođe do ruba ne može dalje    
+            this.newPos = function(code) {
+                //strelica gore
+                if (code == 38  && ((this.y - this.height / 2) > 0)) {
+                    this.y -= 4;
+                } 
+                //strelica dolje              
+                else if (code == 40 && ((this.y + this.height / 2) <= myGameArea.context.canvas.height)) {
+                    this.y += 4;
+                } 
+                //strelica desno            
+                else if (code == 39 && ((this.x + this.width / 2) <= myGameArea.context.canvas.width)) {
+                    this.x += 4;
+                } 
+                //strelica lijevo                  
+                else if (code == 37 && ((this.x - this.width / 2) > 0)) {
+                    this.x -= 4;
+                }                  
+            }
+        }
+
+        //funkcija za detekciju kolizije
+        function checkCollision() {
+            var dialog = document.getElementById("Dialogbox");
+            //petlja koja gleda koliziju za svaki asteroid
+            for (let i = 0; i<num; i++) {
+                var a = asteroids[i];
+                //provjera je li se dogodila kolizija
+                if ((((a.x+a.width)<=(piece.x+piece.width) && (a.x+a.width) >= piece.x) ||
+                    (a.x<=(piece.x+piece.width) && a.x >= piece.x)) &&
+                    (((a.y+a.height)<=(piece.y+piece.height) && (a.y+a.height) >= piece.y) ||
+                    (a.y<=(piece.y+piece.height) && a.y >= piece.y))) {
+                        //računanje vremena igre
+                        var current = Date.now() - time;
+                        var maxTime;
+                        //postavljanje trenutnog vremena u dialog
+                        document.getElementById("currentTime").textContent = timeToString(current);
+                        //provjera je li trenutno vrijeme bolje od najboljeg koje je pohranjeno u localStorage
+                        if (!localStorage.maxTime) {
+                            localStorage.maxTime = current;
+                            maxTime = current;
+                            document.getElementById("endText").textContent = "You have the new best time!";
+                        } else {
+                            if (parseInt(localStorage.maxTime) <= current) {
+                                localStorage.maxTime = current;
+                                maxTime = current;
+                                document.getElementById("endText").textContent = "You have the new best time!";
+                            } else {
+                                maxTime = parseInt(localStorage.maxTime);
+                                document.getElementById("endText").textContent = "You lost!";
+                            }
+                        }
+                        //postavljanje najboljeg vremena u dialog
+                        document.getElementById("maxTime").textContent = timeToString(maxTime);
+                        dialog.show();
+                        //zaustavljanje igre
+                        myGameArea.stop();
+                        stop = true;
+                }
+            }
+            //ponovno pokretanje igre pritiskom na gumb u dialogu
+            document.getElementById("btnHide").onclick = function() {
+                dialog.close();
+                startGame();
+            }
+        }
+
+        //pretvaranje vremena iz milisekundi u prikaz mm:ss.ms
+        function timeToString(ms) {
+            var min = Math.floor(ms/60000);
+            var sec = Math.floor((ms/1000)%60);
+            var msec = Math.floor(ms%1000);
+            var minStr = (min<10) ? "0"+min : min;
+            var secStr = (sec<10) ? "0"+sec : sec;
+            var msStr = (msec<100) ? ((msec<10) ? "00"+msec : "0"+msec) : msec;
+            var str = minStr + ":" + secStr + "." + msStr;
+            return str;
+        }
+
+        //ažuriranje canvasa
+        function updateGameArea() {    
+            myGameArea.clear();
+            //petlja za ažuriranje svakog asteroida
+            for (let i = 0; i<num; i++) {
+                asteroids[i].newPos();
+                asteroids[i].update();
+            }
+            //ažuriranje igrača
+            piece.update();
+            checkCollision();     
+        }  
+        </script>    
+    </head>   
+    <body onload="startGame()">  
+        <h1>Asteroids game</h1>
+        <div>    
+            <dialog id="Dialogbox" style="width:20%; background-color: #CCC; border:1px solid black;">    
+                <p id="endText" style="text-align: center;"></p>  
+                <p style="text-align: center;">Best time: <span id="maxTime"></span></p>
+                <p style="text-align: center;">Your time: <span id="currentTime"></span></p>
+                <div style="text-align: center;">
+                    <button id="btnHide">Play again</button> 
+                </div>    
+            </dialog>        
+        </div>  
+    </body> 
+</html>
